@@ -1,0 +1,3 @@
+= Hello World
+
+A blog for my musings. No schedule. Updated when I feel like it.

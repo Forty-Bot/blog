@@ -1,0 +1,42 @@
+name: 'Build and deploy with Pelican'
+
+on:
+  push:
+    branches: ['master']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - run: sudo apt-get install -y pelican asciidoctor python3-git
+      - id: config
+        uses: actions/configure-pages@v2
+      - run: |
+          pelican -e SITEURL='${{ steps.config.outputs.base_url }}'
+      - uses: actions/upload-pages-artifact@v1
+        with:
+          path: output
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v1
