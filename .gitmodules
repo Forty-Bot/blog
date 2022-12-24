@@ -3,4 +3,4 @@
 	url = git@github.com:getpelican/pelican-plugins.git
 [submodule "blue-penguin"]
 	path = blue-penguin
-	url = git@github.com:jody-frankowski/blue-penguin.git
+	url = git@github.com:Forty-Bot/blue-penguin.git
