@@ -42,7 +42,7 @@ new frame:
 
 To ensure that this sequence can always be recognized, all other code groups
 which (in combination with any other code group) could contain the sequence
-0b1100010001 are invalid. The control code groups to cover are /T/ and /R/
+0b1100010001 are invalid. The last control code groups to cover are /T/ and /R/
 (0b01101 and 0b00111), which form the End-of-Stream Delimiter (ESD), indicating
 the end of a frame. By convention, /V/ is used for invalid code groups.
 
