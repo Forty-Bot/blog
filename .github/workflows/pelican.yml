@@ -19,6 +19,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
+          fetch-depth: 0
       - run: sudo apt-get install -y pelican asciidoctor python3-git
       - id: config
         uses: actions/configure-pages@v2
