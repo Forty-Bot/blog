@@ -9,7 +9,7 @@ inter-frame gap shorter than the end-of-stream delimeter itself.
 
 The 100BASE-TX Ethernet physical layer is broken up into several sub-layers:
 
-image::images/100basex_layers.png[]
+image::{static}images/100basex_layers.png[]
 
 Working from the bottom up, the PMD converts analog signals from the medium to
 https://en.wikipedia.org/wiki/MLT-3_encoding[MLT-3 symbols] (correcting for
@@ -53,7 +53,7 @@ expressing "`and`" (conjunction). All conditions are evaluated continuously
 (more on this later), and sometimes there are uncontrolled transitions (UCTs),
 immediately transitioning from one state to another.
 
-image::images/100basex_pcs_rx.png[]
+image::{static}images/100basex_pcs_rx.png[]
 
 The variables used in the above diagram are:
 
