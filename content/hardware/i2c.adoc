@@ -28,8 +28,8 @@ For example, in the following diagram shows a single-byte read:
 ++++
 <script type="WaveDrom">
 { signal: [
-  { name: "SCL", wave: "1.01|01010101|010101." },
   { name: "SDA", wave: "10=.|=.1.0.=.|=.1.0.1" },
+  { name: "SCL", wave: "1.01|01010101|010101." },
 ],
   foot: {
     tock: '​ start ​ addr[6] … ​ addr[0] ​ R/W ​ ack ​ data[7] … ​ data[0] ​ nack ​ ​ stop '
@@ -51,10 +51,10 @@ drivers of SDA in the above transaction might look like:
 ++++
 <script type="WaveDrom">
 { signal: [
-  { name: "SCL",          wave: "1.01|01010101|010101." },
   { name: "SDA (actual)", wave: "10=.|=.1.0.=.|=.1.0.1" },
   { name: "SDA (master)", wave: "10=.|=.1.....|....0.1" },
   { name: "SDA (slave)",  wave: "1...|....0.=.|=.1...." },
+  { name: "SCL",          wave: "1.01|01010101|010101." },
 ],
   foot: {
     tock: '​ start ​ addr[6] … ​ addr[0] ​ R/W ​ ack ​ data[7] … ​ data[0] ​ nack ​ ​ stop '
@@ -82,8 +82,8 @@ The following diagram shows a successful quick read:
 ++++
 <script type="WaveDrom">
 { signal: [
-  { name: "SCL", wave: "1.01|010101." },
   { name: "SDA", wave: "10=.|=.1.0.1" },
+  { name: "SCL", wave: "1.01|010101." },
 ],
   foot: {
     tock: '​ start ​ addr[6] … ​ addr[0] ​ R/W ​ ack stop '
@@ -100,8 +100,8 @@ byte is all 0s, the slave won't release SDA until the ack bit:
 ++++
 <script type="WaveDrom">
 { signal: [
-  { name: "SCL", wave: "1.01|01010101|010101." },
   { name: "SDA", wave: "10=.|=.1.0...|..1.0.1" },
+  { name: "SCL", wave: "1.01|01010101|010101." },
 ],
   foot: {
     tock: '​ start ​ addr[6] … ​ addr[0] ​ R/W ​ ack ​ data[7] … ​ data[0] ​ nack ​ ​ stop '
