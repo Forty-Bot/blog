@@ -1,0 +1,155 @@
+= Introducing mpmetrics
+:tags: python, openmetrics
+
+== A brief introduction to metrics
+
+Metrics are measurements we make on a program. For example, say we wanted to
+know how long a function takes to call. We can wrap that function in a metric:
+
+[source,python]
+----
+from prometheus_client import Summary, generate_latest
+
+# Create a metric to track time spent and requests made.
+REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
+
+# Decorate function with metric.
+@REQUEST_TIME.time()
+def process_request(t):
+    """A dummy function that takes some time."""
+    time.sleep(t)
+----
+
+After calling `process_requests` a few times, we might see something like the
+following when rendering the metrics:
+
+....
+>>> for i in range(25)
+...  process_request(i/100)
+...
+>>> print(generate_latest().decode())
+<snip>
+# HELP request_processing_seconds Time spent processing request
+# TYPE request_processing_seconds summary
+request_processing_seconds_count 25.0
+request_processing_seconds_sum 3.0034301709383726
+....
+
+From this output, it is possible to calculate the mean request time (120 ms).
+We can also add labels to our metrics:
+
+[source,python]
+----
+REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request',
+                       labelnames=['function'])
+
+@REQUEST_TIME.labels(function='process_request').time()
+def process_request(t):
+    time.sleep(t)
+
+@REQUEST_TIME.labels(function='execute_query').time()
+def execute_query(t):
+    time.sleep(t)
+----
+
+which are enclosed in brackets when exposed:
+
+....
+# HELP request_processing_seconds Time spent processing request
+# TYPE request_processing_seconds summary
+request_processing_seconds_count{function="process_requests"} 31.0
+request_processing_seconds_sum{function="process_requests"} 15.573771364055574
+request_processing_seconds_count{function="execute_query"} 30.0
+request_processing_seconds_sum{function="execute_query"} 14.991517985239625
+....
+
+There are a variety of standard names and formats for metrics, as standardized
+by
+https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md[OpenMetrics],
+but they are all based on giving names to floating point numbers.
+
+== Prometheus Python Client
+
+Python has a library for working with metrics called
+https://github.com/prometheus/client_python[`prometheus_client`], which is
+shown in all of the above examples. This library works great for single-process
+applications. Python's GIL makes it difficult to achieve good concurrency with
+just threads, so it's common to run applications as multiple processes. To
+ensure we have coherent metrics (which don't jump around based on which process
+served the request) we need to synchronize metrics across different processes.
+
+`prometheus_client` does this by using the environmental variable
+`PROMETHEUS_MULTIPROC_DIR` to store several metrics files, one per process.
+Each file contains a series of length-prefixed key-value pairs. Each key is a
+string, and each value is a pair of doubles (the actual value and a timestamp).
+The files themselves are memory-mapped, and updating or reading them just
+involves a memcpy.
+
+Unfortunately, this approach has several drawbacks:
+
+- Not all metrics are supported, and some features (such as exemplars) are not
+  supported either. In threaded mode, `prometheus_client` also supports
+  grouping different metrics in different registries, allowing them to be
+  collected, filtered, and reported independently. In multiprocessing mode
+  there is just one, global registry.
+- The environmental variable enabling multiprocess mode must be set outside of
+  python. That is, it cannot be set programatically. This is inconvenient
+  because the directory should change each run to avoid inadvertently using
+  stale data from a previous run.
+- There is no synchronization between processes, nor is there any atomicity. To
+  use the above example, it would be possible to read an old value of
+  `request_processing_seconds_count` and a new value of
+  `request_processing_seconds_sum`. This is especially problematic for
+  infrequent events. On some architectures (although I don't believe x86 is
+  affected), torn reads/writes may result in completely bogus values being
+  read.
+
+== mpmetrics
+
+I found these restrictions to be limiting and unweildy, so I wrote a
+https://github.com/Forty-Bot/mpmetrics[multiprocess-safe metrics library]. It
+uses atomic integers (and doubles) in shared memory to ensure that we always get a
+consistent view of the metrics. All of the above restrictions are lifted.
+Although there's a lot going on under the hood, this is all hidden behind the
+same API as `prometheus_client`. Let's revisit the above example, but this time
+using `mpmetrics`:
+
+[source,python]
+----
+from mpmetrics import Summary
+from prometheus_client import start_http_server
+import multiprocessing
+import random
+import time
+
+# Create a metric to track time spent and requests made.
+REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
+
+# Decorate function with metric.
+@REQUEST_TIME.time()
+def process_request(t):
+    """A dummy function that takes some time."""
+    time.sleep(t)
+----
+
+This time we'll generate requests from multiple processes:
+
+[source,python]
+----
+# Function to generate requests
+def generate_requests():
+    while True:
+        process_request(random.random())
+
+if __name__ == '__main__':
+    # Start up the server to expose the metrics.
+    start_http_server(8000)
+    # Generate some requests from two processes
+    multiprocessing.Process(target=generate_requests).start()
+    generate_requests()
+----
+
+You can navigate to http://localhost:8000/metrics to view the metrics. If
+you're interested, check out some
+https://github.com/Forty-Bot/mpmetrics/tree/master/examples[other examples], or
+head over to the https://mpmetrics.trends.tf/[documentation].
