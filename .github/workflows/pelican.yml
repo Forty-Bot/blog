@@ -20,7 +20,7 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-      - run: sudo apt-get install -y pelican asciidoctor python3-git
+      - run: sudo apt-get install -y pelican asciidoctor python3-git ruby-rouge
       - id: config
         uses: actions/configure-pages@v2
       - run: |
